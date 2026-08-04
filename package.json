@@ -1,0 +1,19 @@
+{
+  "name": "redmine-mcp-server",
+  "version": "1.0.0",
+  "description": "Redmine REST API를 Claude MCP 커넥터로 연결하는 서버",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "axios": "^1.7.9",
+    "express": "^4.21.2",
+    "zod": "^3.24.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
