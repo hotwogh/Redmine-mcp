@@ -58,20 +58,33 @@ function buildServer() {
       project_id: z.union([z.string(), z.number()]).optional().describe("프로젝트 ID 또는 식별자"),
       status_id: z.string().optional().describe("open / closed / * / 상태ID"),
       assigned_to_id: z.union([z.string(), z.number()]).optional().describe("담당자 ID (me 가능)"),
-      limit: z.number().max(100).optional().describe("가져올 개수 (기본 25)"),
+      priority_id: z.union([z.string(), z.number()]).optional().describe("우선순위 ID로 필터 (레드마인 설정에 따라 다르며, 보통 Low=3,Normal=4,High=5,Urgent=6,Immediate=7 근처)"),
+      min_priority_name: z.enum(["Normal", "High", "Urgent", "Immediate"]).optional().describe("이 우선순위 '이상'만 필터링 (결과를 받아온 뒤 서버에서 걸러줌, 레드마인 우선순위 이름 기준)"),
+      limit: z.number().max(100).optional().describe("가져올 개수 (기본 25, priority 필터 적용 전 원본 조회 개수)"),
     },
-    async ({ project_id, status_id, assigned_to_id, limit }) => {
+    async ({ project_id, status_id, assigned_to_id, priority_id, min_priority_name, limit }) => {
       try {
         const { data } = await redmine.get("/issues.json", {
           params: {
             project_id,
             status_id,
             assigned_to_id,
+            priority_id,
             limit: limit ?? 25,
           },
         });
-        const summary = data.issues.map(
-          (i) => `#${i.id} [${i.status.name}] ${i.subject}`
+
+        let issues = data.issues;
+
+        if (min_priority_name) {
+          // 레드마인 기본 우선순위 순서 (낮음→높음). 커스터마이즈된 경우 이름 매칭이 안 될 수 있음.
+          const order = ["Low", "Normal", "High", "Urgent", "Immediate"];
+          const minIndex = order.indexOf(min_priority_name);
+          issues = issues.filter((i) => order.indexOf(i.priority.name) >= minIndex);
+        }
+
+        const summary = issues.map(
+          (i) => `#${i.id} [${i.status.name}] [${i.priority.name}] ${i.subject}`
         );
         return { content: [{ type: "text", text: summary.join("\n") || "결과 없음" }] };
       } catch (err) {
