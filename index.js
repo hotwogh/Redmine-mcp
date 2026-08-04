@@ -97,6 +97,36 @@ function buildServer() {
   );
 
   server.tool(
+    "search_issues",
+    "여러 프로젝트에 걸쳐 키워드로 이슈를 검색합니다. 제목/본문 전체에서 검색하며, 특정 프로젝트에 국한하지 않고 찾을 때 사용합니다.",
+    {
+      query: z.string().describe("검색할 키워드 (예: 'SECL 5V 2A charging')"),
+      limit: z.number().max(50).optional().describe("가져올 개수 (기본 20)"),
+    },
+    async ({ query, limit }) => {
+      try {
+        const { data } = await redmine.get("/search.json", {
+          params: {
+            q: query,
+            issues: 1,
+            titles_only: 0,
+            limit: limit ?? 20,
+          },
+        });
+        const results = (data.results || []).map(
+          (r) => `#${r.id} ${r.title}`
+        );
+        return { content: [{ type: "text", text: results.join("\n") || "검색 결과 없음" }] };
+      } catch (err) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `검색 실패: ${err.response?.data ? JSON.stringify(err.response.data) : err.message}` }],
+        };
+      }
+    }
+  );
+
+  server.tool(
     "create_issue",
     "레드마인에 새 이슈를 생성합니다.",
     {
