@@ -27,6 +27,13 @@ function buildServer() {
     version: "1.0.0",
   });
 
+  const registeredTools = [];
+  const originalTool = server.tool.bind(server);
+  server.tool = (...args) => {
+    registeredTools.push(args[0]);
+    return originalTool(...args);
+  };
+
   server.tool(
     "get_issue",
     "레드마인 이슈 하나를 ID로 조회합니다.",
@@ -176,6 +183,7 @@ function buildServer() {
     }
   );
 
+  console.log(`[buildServer] 등록된 도구: ${registeredTools.join(", ")}`);
   return server;
 }
 
@@ -188,6 +196,7 @@ app.get("/health", (req, res) => {
 });
 
 app.post("/mcp", async (req, res) => {
+  console.log(`[mcp 요청] method=${req.body?.method || "?"} id=${req.body?.id ?? "?"}`);
   if (MCP_SHARED_SECRET) {
     const auth = req.headers["authorization"];
     if (auth !== `Bearer ${MCP_SHARED_SECRET}`) {
