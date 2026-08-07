@@ -183,6 +183,10 @@ function buildServer() {
 const app = express();
 app.use(express.json());
 
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 app.post("/mcp", async (req, res) => {
   if (MCP_SHARED_SECRET) {
     const auth = req.headers["authorization"];
